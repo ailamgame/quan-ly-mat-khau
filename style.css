@@ -1,0 +1,264 @@
+:root {
+    --primary-color: #4f46e5;
+    --primary-hover: #4338ca;
+    --bg-color: #f3f4f6;
+    --card-bg: #ffffff;
+    --text-main: #1f2937;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+}
+
+/* Navbar */
+.custom-navbar {
+    background: linear-gradient(135deg, var(--primary-color), #3b82f6) !important;
+    padding: 1rem 0;
+}
+
+/* Accordion (Nhóm) */
+.accordion {
+    background-color: transparent;
+}
+
+.accordion-item {
+    border: none;
+    border-radius: 16px !important;
+    margin-bottom: 1.2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    overflow: hidden;
+    background-color: var(--card-bg);
+}
+
+.accordion-button {
+    background-color: #ffffff !important;
+    color: #1f2937 !important;
+    padding: 1rem 1.25rem;
+}
+
+.accordion-button:not(.collapsed) {
+    box-shadow: none !important;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.accordion-button:focus {
+    box-shadow: none !important;
+}
+
+.group-action-icon {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    background-color: transparent;
+}
+
+.group-action-icon:hover {
+    background-color: #f3f4f6;
+    transform: scale(1.05);
+}
+
+.accordion-button::after {
+    margin-left: 0.75rem;
+}
+
+/* Các item tài khoản */
+.account-item {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 0.8rem;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+}
+
+.account-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    border-color: #d1d5db;
+}
+
+/* Hiển thị mật khẩu */
+.password-display {
+    font-family: 'Courier New', Courier, monospace;
+    background: #f9fafb;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    letter-spacing: 3px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #4b5563;
+    text-align: center;
+    border: 1px dashed #d1d5db;
+}
+
+/* Nút bấm hành động */
+.action-btns .btn {
+    border-radius: 8px;
+    margin-left: 0.3rem;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Modals */
+.modal-content {
+    border-radius: 20px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.modal-header {
+    border-bottom: 1px solid #f3f4f6;
+    background-color: #ffffff;
+    border-radius: 20px 20px 0 0;
+}
+
+.form-control {
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    background-color: #f9fafb;
+}
+
+.form-control:focus {
+    background-color: #ffffff;
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+    border-color: var(--primary-color);
+}
+
+/* Thanh cuộn */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* --- GIAO DIỆN KHỐI VUÔNG (FOLDER GRID) --- */
+.folder-card {
+    border-radius: 20px;
+    background-color: #ffffff;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    border: 1px solid #f3f4f6;
+    aspect-ratio: 1 / 1;
+}
+
+.folder-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px -5px rgba(0,0,0,0.1);
+    border-color: #e5e7eb;
+}
+
+.folder-icon {
+    font-size: 4rem;
+    color: #fbbf24;
+    margin-bottom: 15px;
+    filter: drop-shadow(0 4px 6px rgba(251, 191, 36, 0.3));
+}
+
+.folder-actions {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.folder-card:hover .folder-actions {
+    opacity: 1;
+}
+
+@media (max-width: 768px) {
+    .folder-actions { opacity: 1; }
+}
+
+/* Thanh trượt */
+.form-range {
+    width: 100%;
+    height: 1.5rem;
+    padding: 0;
+    background: transparent;
+    appearance: none;
+}
+
+.form-range::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 0.5rem;
+    cursor: pointer;
+    background: #e5e7eb;
+    border-radius: 1rem;
+}
+
+.form-range::-webkit-slider-thumb {
+    height: 1.25rem;
+    width: 1.25rem;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    appearance: none;
+    margin-top: -0.35rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Lớp đè Màn hình khóa */
+.z-max {
+    z-index: 9999 !important;
+}
+
+/* --- GIAO DIỆN 6 Ô NHẬP MÃ PIN (OTP STYLE) --- */
+.pin-box {
+    width: 45px;
+    height: 55px;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    border-radius: 10px;
+    border: 2px solid #d1d5db;
+    padding: 0;
+    transition: all 0.2s;
+}
+
+/* Đổi màu viền khi đang gõ vào ô đó */
+.pin-box:focus {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15) !important;
+    transform: translateY(-2px);
+}
+
+/* Tắt viền mặc định của bootstrap input khi nhúng vào */
+.pin-box.form-control {
+    background-color: #ffffff;
+}
+.pin-box.bg-light {
+    background-color: #f3f4f6 !important;
+}
+
+/* --- Ô VUÔNG THÊM NHÓM (NÉT ĐỨT) --- */
+.folder-card-add {
+    border: 2px dashed #cbd5e1 !important; /* Viền nét đứt */
+    background-color: transparent !important;
+    box-shadow: none !important;
+    color: #64748b;
+}
+
+.folder-card-add:hover {
+    background-color: #f8fafc !important;
+    border-color: var(--primary-color) !important;
+    color: var(--primary-color);
+    transform: translateY(-5px);
+}
