@@ -18,56 +18,6 @@ body {
     padding: 1rem 0;
 }
 
-/* Accordion (Nhóm) */
-.accordion {
-    background-color: transparent;
-}
-
-.accordion-item {
-    border: none;
-    border-radius: 16px !important;
-    margin-bottom: 1.2rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    overflow: hidden;
-    background-color: var(--card-bg);
-}
-
-.accordion-button {
-    background-color: #ffffff !important;
-    color: #1f2937 !important;
-    padding: 1rem 1.25rem;
-}
-
-.accordion-button:not(.collapsed) {
-    box-shadow: none !important;
-    border-bottom: 1px solid #f3f4f6;
-}
-
-.accordion-button:focus {
-    box-shadow: none !important;
-}
-
-.group-action-icon {
-    width: 34px;
-    height: 34px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    background-color: transparent;
-}
-
-.group-action-icon:hover {
-    background-color: #f3f4f6;
-    transform: scale(1.05);
-}
-
-.accordion-button::after {
-    margin-left: 0.75rem;
-}
-
 /* Các item tài khoản */
 .account-item {
     background: #ffffff;
@@ -164,13 +114,6 @@ body {
     border-color: #e5e7eb;
 }
 
-.folder-icon {
-    font-size: 4rem;
-    color: #fbbf24;
-    margin-bottom: 15px;
-    filter: drop-shadow(0 4px 6px rgba(251, 191, 36, 0.3));
-}
-
 .folder-actions {
     position: absolute;
     top: 15px;
@@ -187,7 +130,7 @@ body {
     .folder-actions { opacity: 1; }
 }
 
-/* Thanh trượt */
+/* Thanh trượt sinh mật khẩu */
 .form-range {
     width: 100%;
     height: 1.5rem;
@@ -233,14 +176,12 @@ body {
     transition: all 0.2s;
 }
 
-/* Đổi màu viền khi đang gõ vào ô đó */
 .pin-box:focus {
     border-color: var(--primary-color) !important;
     box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15) !important;
     transform: translateY(-2px);
 }
 
-/* Tắt viền mặc định của bootstrap input khi nhúng vào */
 .pin-box.form-control {
     background-color: #ffffff;
 }
@@ -250,7 +191,7 @@ body {
 
 /* --- Ô VUÔNG THÊM NHÓM (NÉT ĐỨT) --- */
 .folder-card-add {
-    border: 2px dashed #cbd5e1 !important; /* Viền nét đứt */
+    border: 2px dashed #cbd5e1 !important; 
     background-color: transparent !important;
     box-shadow: none !important;
     color: #64748b;

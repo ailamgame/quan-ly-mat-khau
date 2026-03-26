@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Lý Mật Khẩu</title>
+    <title>Trình Quản Lý Mật Khẩu</title>
     <link rel="shortcut icon" href="quan-ly-mat-khau.png" type="image/x-icon">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,19 +12,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
     <div id="lock-screen" class="position-fixed vh-100 vw-100 bg-white z-max d-none" style="top: 0; left: 0;">
         <div class="d-flex flex-column align-items-center justify-content-center h-100">
             <i class="fa-solid fa-lock text-primary mb-4" style="font-size: 4rem;"></i>
             <h4 class="fw-bold mb-4 text-dark">Nhập mã PIN để mở khóa</h4>
-
-            <!-- <div id="lockout-msg" class="alert alert-danger d-none mb-4 text-center">
-                <i class="fa-solid fa-triangle-exclamation me-2"></i>
-                Nhập sai quá nhiều lần. <br>
-                Thử lại sau: <span id="lockout-timer" class="fw-bold">00:00</span>
-            </div> -->
 
             <div class="d-flex gap-2 justify-content-center mb-4" id="unlock-pin-container">
                 <input type="password" class="form-control pin-box" maxlength="1" inputmode="numeric">
@@ -35,51 +27,51 @@
                 <input type="password" class="form-control pin-box" maxlength="1" inputmode="numeric">
                 <input type="password" class="form-control pin-box" maxlength="1" inputmode="numeric">
             </div>
-
-            <!-- <button class="btn btn-primary px-5 rounded-pill shadow" onclick="verifyPin()">Mở khóa</button> -->
         </div>
     </div>
 
     <nav class="navbar navbar-dark shadow-sm custom-navbar">
         <div class="container">
             <span class="navbar-brand mb-0 h1 fw-bold">
-                <i class="fa-solid fa-shield-halved me-2"></i>Quản lý mật khẩu
+                <i class="fa-solid fa-shield-halved me-2"></i>VaultApp
             </span>
-            <div class="d-flex gap-1">
-                <!-- <button id="btn-lock" class="btn btn-warning fw-bold shadow-sm d-none" onclick="lockApp()"
-                    title="Khóa ứng dụng ngay lập tức">
-                    <i class="fa-solid fa-lock me-1"></i> Khóa
-                </button>
-                <button class="btn btn-outline-light fw-semibold border-0" onclick="showSecurityModal()">
-                    <i class="fa-solid fa-gear"></i>
-                </button> -->
-                <button id="btn-lock"
-                    class="btn btn-warning shadow-lg d-none position-fixed d-flex align-items-center justify-content-center rounded-circle"
-                    onclick="lockApp()" title="Khóa ứng dụng ngay lập tức"
+            <div class="d-flex gap-2 align-items-center">
+                <button id="btn-lock" 
+                    class="btn btn-warning shadow-lg d-none position-fixed d-flex align-items-center justify-content-center rounded-circle" 
+                    onclick="lockApp()" 
+                    title="Khóa ứng dụng ngay lập tức"
                     style="bottom: 25px; right: 25px; width: 60px; height: 60px; z-index: 1030; border: 2px solid white;">
                     <i class="fa-solid fa-lock fs-3"></i>
                 </button>
-                <button class="btn btn-outline-light border-0 d-inline-flex align-items-center justify-content-center"
-                    onclick="showSecurityModal()" title="Cài đặt bảo mật"
-                    style="width: 38px; height: 38px; border-radius: 8px;">
-                    <i class="fa-solid fa-gear fs-5"></i>
-                </button>
+
+                <div class="dropdown">
+                    <button class="btn btn-outline-light border-0 d-inline-flex align-items-center justify-content-center" 
+                            type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Quản lý hệ thống"
+                            style="width: 38px; height: 38px; border-radius: 8px;">
+                        <i class="fa-solid fa-gear fs-5"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 mt-2">
+                        <li>
+                            <a class="dropdown-item py-2" href="#" onclick="showSecurityModal()">
+                                <i class="fa-solid fa-key me-2 text-primary"></i> Đổi mã PIN
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider opacity-50"></li>
+                        <li>
+                            <a class="dropdown-item py-2" href="#" onclick="exportVaultText()">
+                                <i class="fa-solid fa-copy me-2 text-success"></i> Sao chép mã sao lưu
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item py-2" href="#" onclick="showImportModal()">
+                                <i class="fa-solid fa-paste me-2 text-secondary"></i> Nhập từ mã văn bản
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
     </nav>
-
-    <div class="container mt-3">
-    <div class="d-flex gap-2 justify-content-end">
-        <button class="btn btn-outline-primary btn-sm rounded-pill px-3" onclick="exportVault()">
-            <i class="fa-solid fa-file-export me-1"></i> Xuất sao lưu
-        </button>
-        
-        <label class="btn btn-outline-secondary btn-sm rounded-pill px-3 mb-0" style="cursor: pointer;">
-            <i class="fa-solid fa-file-import me-1"></i> Nhập sao lưu
-            <input type="file" id="importFile" hidden accept=".json" onchange="importVault(event)">
-        </label>
-    </div>
-</div>
 
     <div class="container mt-4 mb-5" id="main-container">
         <div id="group-list"></div>
@@ -93,7 +85,7 @@
                     <button type="button" class="btn-close" id="btn-close-security" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4 text-center">
-                    <p class="text-muted small mb-3">Mã PIN gồm <b>đúng 6 chữ số</b> dùng để <strong class="text-danger">mã hóa toàn bộ</strong> dữ liệu của bạn.</p>
+                    <p class="text-muted small mb-3">Mã PIN gồm <b>đúng 6 chữ số</b> dùng để <strong class="text-danger">mã hóa toàn bộ</strong> dữ liệu.</p>
                     
                     <div class="mb-3 d-none" id="old-pin-container">
                         <label class="form-label fw-bold text-warning mb-2">Mã PIN hiện tại <span class="text-danger">*</span></label>
@@ -130,9 +122,35 @@
                             <input type="password" class="form-control pin-box" maxlength="1" inputmode="numeric">
                         </div>
                     </div>
+
+                    <div id="first-run-import-section" class="mt-4 pt-3 border-top d-none">
+                        <p class="text-muted small mb-2 fw-medium">Bạn đã có mã sao lưu từ trước?</p>
+                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-4 shadow-sm" onclick="switchToImport()">
+                            <i class="fa-solid fa-paste me-1"></i> Khôi phục từ mã sao lưu
+                        </button>
+                    </div>
                 </div>
                 <div class="modal-footer border-0 bg-light rounded-bottom-4 d-flex justify-content-center">
                     <button type="button" class="btn btn-primary px-5 fw-bold" onclick="saveSecurityPin()">Lưu mã PIN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="importModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Nhập mã sao lưu</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">Dán đoạn mã văn bản bạn đã copy vào ô dưới đây. <strong class="text-danger">Lưu ý: Mã chỉ có hiệu lực 5 phút kể từ lúc xuất.</strong></p>
+                    <textarea class="form-control font-monospace text-muted" id="importTextData" rows="5" placeholder="Dán mã vào đây (Bắt đầu bằng ey...)"></textarea>
+                </div>
+                <div class="modal-footer border-0 bg-light rounded-bottom-4">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary px-4" onclick="processImportText()">Xác nhận Nhập</button>
                 </div>
             </div>
         </div>
@@ -149,8 +167,7 @@
                     <input type="hidden" id="groupId">
                     <div class="mb-3">
                         <label class="form-label text-muted fw-semibold">Tên nhóm (VD: Mạng xã hội)</label>
-                        <input type="text" class="form-control form-control-lg" id="groupName"
-                            placeholder="Nhập tên nhóm..." required>
+                        <input type="text" class="form-control form-control-lg" id="groupName" placeholder="Nhập tên nhóm..." required>
                     </div>
                 </div>
                 <div class="modal-footer border-0 bg-light rounded-bottom-4">
@@ -171,20 +188,18 @@
                 <div class="modal-body p-4">
                     <input type="hidden" id="accGroupId">
                     <input type="hidden" id="accountId">
-
+                    
                     <div class="mb-3">
                         <label class="form-label text-muted fw-semibold">Tài khoản / Email</label>
-                        <input type="text" class="form-control" id="accUsername" placeholder="Nhập tên đăng nhập..."
-                            required>
+                        <input type="text" class="form-control" id="accUsername" placeholder="Nhập tên đăng nhập..." required>
                     </div>
-
+                    
                     <hr class="text-muted opacity-25">
-
+                    
                     <label class="form-label fw-bold text-primary">Mật Khẩu</label>
                     <div class="input-group mb-3 shadow-sm rounded-3">
                         <input type="text" class="form-control" id="accPassword" placeholder="Nhập hoặc tạo tự động">
-                        <button class="btn btn-primary" type="button" onclick="generatePassword()"
-                            title="Tạo ngẫu nhiên">
+                        <button class="btn btn-primary" type="button" onclick="generatePassword()" title="Tạo ngẫu nhiên">
                             <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Tạo
                         </button>
                     </div>
@@ -192,11 +207,8 @@
                     <div class="card bg-light border-0 rounded-3">
                         <div class="card-body p-3" style="font-size: 0.9rem;">
                             <div class="d-flex align-items-center gap-3 mb-3">
-                                <span class="fw-semibold text-nowrap" style="min-width: 80px;">
-                                    Độ dài: <span id="lenValue" class="text-primary fs-5">12</span>
-                                </span>
-                                <input type="range" class="form-range flex-grow-1" id="genLength" min="6" max="32"
-                                    value="12" oninput="document.getElementById('lenValue').innerText = this.value">
+                                <span class="fw-semibold text-nowrap" style="min-width: 80px;">Độ dài: <span id="lenValue" class="text-primary fs-5">12</span></span>
+                                <input type="range" class="form-range flex-grow-1" id="genLength" min="6" max="32" value="12" oninput="document.getElementById('lenValue').innerText = this.value">
                             </div>
                             <div class="form-check form-switch mb-1">
                                 <input class="form-check-input" type="checkbox" id="genUpper">
@@ -210,8 +222,7 @@
                                 <input class="form-check-input" type="checkbox" id="genSymbol">
                                 <label class="form-check-label">Ký tự đặc biệt (!@#)</label>
                             </div>
-                            <small class="text-muted d-block mt-2"><i class="fa-solid fa-circle-info me-1"></i>Chữ
-                                thường (a-z) luôn được bao gồm.</small>
+                            <small class="text-muted d-block mt-2"><i class="fa-solid fa-circle-info me-1"></i>Chữ thường (a-z) luôn được bao gồm.</small>
                         </div>
                     </div>
                 </div>
@@ -224,14 +235,12 @@
     </div>
 
     <div class="toast-container position-fixed bottom-0 end-0 p-3">
-        <div id="copyToast" class="toast align-items-center text-white bg-success border-0" role="alert"
-            aria-live="assertive" aria-atomic="true">
+        <div id="copyToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="d-flex">
                 <div class="toast-body fw-medium">
                     <i class="fa-solid fa-check-circle me-2"></i>Đã sao chép mật khẩu!
                 </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
-                    aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
         </div>
     </div>
@@ -240,5 +249,4 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script src="app.js"></script>
 </body>
-
 </html>

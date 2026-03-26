@@ -16,20 +16,30 @@ let sessionKey = sessionStorage.getItem('vaultSessionKey') || null;
 let lockoutStatus = (vaultConfig && vaultConfig.lockout) ? vaultConfig.lockout : { attempts: 0, lockUntil: 0 };
 let lockoutInterval = null;
 
-let groupModalEl, accountModalEl, securityModalEl;
+let groupModalEl, accountModalEl, securityModalEl, importModalEl;
 let currentGroupId = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     groupModalEl = new bootstrap.Modal(document.getElementById('groupModal'));
     accountModalEl = new bootstrap.Modal(document.getElementById('accountModal'));
     
-    // Cài đặt Modal Bảo mật KHÔNG THỂ thoát nếu click ra ngoài hoặc bấm Esc
+    const importModalNode = document.getElementById('importModal');
+    if (importModalNode) {
+        importModalEl = new bootstrap.Modal(importModalNode);
+        importModalNode.addEventListener('shown.bs.modal', () => {
+            document.getElementById('importTextData').focus();
+        });
+        importModalNode.addEventListener('hidden.bs.modal', () => {
+            const isFirstRun = (!vaultConfig || !vaultConfig.hasPin);
+            if (isFirstRun) securityModalEl.show();
+        });
+    }
+    
     securityModalEl = new bootstrap.Modal(document.getElementById('securityModal'), {
         backdrop: 'static',
         keyboard: false
     });
     
-    // Tự động tạo giao diện Cảnh báo khóa
     const unlockContainer = document.getElementById('unlock-pin-container');
     if (unlockContainer && !document.getElementById('lockout-msg')) {
         unlockContainer.insertAdjacentHTML('beforebegin', `
@@ -64,21 +74,10 @@ document.addEventListener('DOMContentLoaded', () => {
         `);
     }
 
-    setupPinInputs('unlock-pin-container', (val) => {
-        if (val.length === 6) verifyPin(); 
-    });
-    
-    setupPinInputs('old-pin-inputs', (val) => {
-        if (val.length === 6) handleOldPinCheck(val); 
-    });
-    
-    setupPinInputs('new-pin-inputs', (val) => {
-        if (val.length === 6) document.querySelector('#confirm-pin-inputs .pin-box').focus(); 
-    });
-    
-    setupPinInputs('confirm-pin-inputs', (val) => {
-        if (val.length === 6) document.querySelector('#securityModal .btn-primary').focus(); 
-    }); 
+    setupPinInputs('unlock-pin-container', (val) => { if (val.length === 6) verifyPin(); });
+    setupPinInputs('old-pin-inputs', (val) => { if (val.length === 6) handleOldPinCheck(val); });
+    setupPinInputs('new-pin-inputs', (val) => { if (val.length === 6) document.querySelector('#confirm-pin-inputs .pin-box').focus(); });
+    setupPinInputs('confirm-pin-inputs', (val) => { if (val.length === 6) document.querySelector('#securityModal .btn-primary').focus(); }); 
 
     initSecurityCheck(); 
 });
@@ -172,25 +171,14 @@ function checkLockoutTimer() {
     }
 }
 
-// ================= LƯU TRỮ & MÃ HÓA (AES-256) =================
+// ================= LƯU TRỮ & MÃ HÓA =================
 function saveData() {
     let payloadToSave = appData;
-    
-    if (sessionKey) {
-        payloadToSave = CryptoJS.AES.encrypt(JSON.stringify(appData), sessionKey).toString();
-    }
-
-    const configToSave = {
-        hasPin: !!sessionKey,
-        lockout: lockoutStatus, 
-        payload: payloadToSave
-    };
-
+    if (sessionKey) payloadToSave = CryptoJS.AES.encrypt(JSON.stringify(appData), sessionKey).toString();
+    const configToSave = { hasPin: !!sessionKey, lockout: lockoutStatus, payload: payloadToSave };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(configToSave));
     vaultConfig = configToSave; 
-    
     toggleLockButton(); 
-    
     if(!document.getElementById('lock-screen').classList.contains('d-none')) return;
     renderGroups();
 }
@@ -202,25 +190,17 @@ function decryptData(pin) {
         if (!decryptedString) return false;
         appData = JSON.parse(decryptedString); 
         return true;
-    } catch (e) {
-        return false;
-    }
+    } catch (e) { return false; }
 }
 
 // ================= HÀM KHÓA ỨNG DỤNG =================
 function lockApp() {
     if (!vaultConfig || !vaultConfig.hasPin) return;
-
     sessionKey = null;
     sessionStorage.removeItem('vaultSessionKey');
     sessionStorage.removeItem('vaultIsAuthenticated');
-
-    appData = {
-        groups: [],
-        genOptions: { length: 12, upper: true, number: true, symbol: true }
-    };
+    appData = { groups: [], genOptions: { length: 12, upper: true, number: true, symbol: true } };
     currentGroupId = null;
-
     document.getElementById('lock-screen').classList.remove('d-none');
     clearPinValue('unlock-pin-container');
     hideUnlockError();
@@ -244,9 +224,7 @@ function toggleLockButton() {
 // ================= KIỂM TRA BẢO MẬT =================
 function initSecurityCheck() {
     checkLockoutTimer(); 
-
     if (!vaultConfig || !vaultConfig.hasPin) {
-        // Nếu khởi chạy lần đầu: Bắt buộc gọi Modal tạo PIN
         showSecurityModal();
     } else {
         if (sessionKey && decryptData(sessionKey)) {
@@ -255,16 +233,13 @@ function initSecurityCheck() {
             renderGroups();
         } else {
             document.getElementById('lock-screen').classList.remove('d-none');
-            if (!checkLockoutTimer()) {
-                document.querySelector('#unlock-pin-container .pin-box').focus();
-            }
+            if (!checkLockoutTimer()) document.querySelector('#unlock-pin-container .pin-box').focus();
         }
     }
 }
 
 function verifyPin() {
     if (checkLockoutTimer()) return; 
-
     const pin = getPinValue('unlock-pin-container');
     if (pin.length !== 6) return;
 
@@ -274,9 +249,7 @@ function verifyPin() {
         sessionStorage.setItem('vaultSessionKey', pin);
         clearPinValue('unlock-pin-container');
         hideUnlockError();
-        
         lockoutStatus = { attempts: 0, lockUntil: 0 };
-
         toggleLockButton();
         loadGenOptions();
         saveData(); 
@@ -310,50 +283,36 @@ function setupPinInputs(containerId, onComplete) {
     inputs.forEach((input, index) => {
         input.addEventListener('input', () => {
             input.value = input.value.replace(/[^0-9]/g, '');
-            
             if (containerId === 'unlock-pin-container') hideUnlockError();
             hideModalError(); 
             if(containerId === 'old-pin-inputs') resetOldPinValidation();
-
             if (input.value) {
-                if (index < inputs.length - 1) {
-                    inputs[index + 1].focus();
-                } else {
-                    if(typeof onComplete === 'function') {
-                        setTimeout(() => onComplete(getPinValue(containerId)), 50);
-                    }
-                }
+                if (index < inputs.length - 1) inputs[index + 1].focus();
+                else if(typeof onComplete === 'function') setTimeout(() => onComplete(getPinValue(containerId)), 50);
             }
         });
-        
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Backspace') {
                 if(containerId === 'old-pin-inputs') resetOldPinValidation();
                 if (containerId === 'unlock-pin-container') hideUnlockError();
                 hideModalError();
-
                 if (!input.value && index > 0) {
                     e.preventDefault();
                     inputs[index - 1].value = '';
                     inputs[index - 1].focus();
                 }
-            } else if (e.key === 'Enter' && containerId === 'unlock-pin-container') {
-                verifyPin();
-            }
+            } else if (e.key === 'Enter' && containerId === 'unlock-pin-container') verifyPin();
         });
-
         input.addEventListener('paste', (e) => {
             e.preventDefault();
             const pastedData = e.clipboardData.getData('text').replace(/[^0-9]/g, '').slice(0, 6);
             if (containerId === 'unlock-pin-container') hideUnlockError();
             hideModalError();
-
             for(let i = 0; i < pastedData.length; i++) {
                 if(inputs[index + i]) {
                     inputs[index + i].value = pastedData[i];
-                    if(index + i < inputs.length - 1) {
-                        inputs[index + i + 1].focus();
-                    } else if (index + i === inputs.length - 1) {
+                    if(index + i < inputs.length - 1) inputs[index + i + 1].focus();
+                    else if (index + i === inputs.length - 1) {
                         inputs[index + i].focus();
                         if(typeof onComplete === 'function') setTimeout(() => onComplete(getPinValue(containerId)), 50);
                     }
@@ -365,27 +324,20 @@ function setupPinInputs(containerId, onComplete) {
 
 function resetOldPinValidation() {
     const inputs = document.querySelectorAll('#old-pin-inputs .pin-box');
-    inputs.forEach(inp => {
-        inp.classList.remove('border-success', 'border-danger', 'text-success', 'text-danger');
-    });
+    inputs.forEach(inp => inp.classList.remove('border-success', 'border-danger', 'text-success', 'text-danger'));
 }
 
 function handleOldPinCheck(val) {
     const inputs = document.querySelectorAll('#old-pin-inputs .pin-box');
     if (val === sessionKey) {
-        inputs.forEach(inp => {
-            inp.classList.remove('border-danger', 'text-danger');
-            inp.classList.add('border-success', 'text-success');
-        });
+        inputs.forEach(inp => { inp.classList.remove('border-danger', 'text-danger'); inp.classList.add('border-success', 'text-success'); });
         document.querySelector('#new-pin-inputs .pin-box').focus();
     } else {
-        inputs.forEach(inp => {
-            inp.classList.remove('border-success', 'text-success');
-            inp.classList.add('border-danger', 'text-danger');
-        });
+        inputs.forEach(inp => { inp.classList.remove('border-success', 'text-success'); inp.classList.add('border-danger', 'text-danger'); });
     }
 }
 
+// ================= MODAL CÀI ĐẶT =================
 function showSecurityModal() {
     clearPinValue('old-pin-inputs');
     clearPinValue('new-pin-inputs');
@@ -393,18 +345,24 @@ function showSecurityModal() {
     resetOldPinValidation();
     hideModalError();
     
-    // Kiểm tra có phải lần đầu không
     const isFirstRun = (!vaultConfig || !vaultConfig.hasPin);
+    const importSec = document.getElementById('first-run-import-section');
 
     if (isFirstRun) {
         document.getElementById('old-pin-container').classList.add('d-none');
-        document.getElementById('btn-close-security').classList.add('d-none'); // Khóa nút X
+        document.getElementById('btn-close-security').classList.add('d-none'); 
+        if (importSec) importSec.classList.remove('d-none'); 
     } else {
         document.getElementById('old-pin-container').classList.remove('d-none');
-        document.getElementById('btn-close-security').classList.remove('d-none'); // Mở nút X
+        document.getElementById('btn-close-security').classList.remove('d-none'); 
+        if (importSec) importSec.classList.add('d-none'); 
     }
-    
     securityModalEl.show();
+}
+
+function switchToImport() {
+    securityModalEl.hide();
+    setTimeout(() => { showImportModal(); }, 300);
 }
 
 function saveSecurityPin() {
@@ -413,33 +371,24 @@ function saveSecurityPin() {
     const confirmPin = getPinValue('confirm-pin-inputs');
     const isFirstRun = (!vaultConfig || !vaultConfig.hasPin);
 
-    // Nếu không phải lần đầu, bắt buộc kiểm tra mã PIN cũ
     if (!isFirstRun && oldPin !== sessionKey) {
         showModalError("Mã PIN hiện tại không chính xác!");
-        clearPinValue('old-pin-inputs');
-        return;
+        clearPinValue('old-pin-inputs'); return;
     }
-
     if (newPin.length !== 6) {
         showModalError("Vui lòng nhập ĐÚNG 6 CHỮ SỐ cho mã PIN mới!");
-        clearPinValue('new-pin-inputs');
-        clearPinValue('confirm-pin-inputs');
-        return;
+        clearPinValue('new-pin-inputs'); clearPinValue('confirm-pin-inputs'); return;
     }
-
     if (newPin !== confirmPin) {
         showModalError("Mã PIN xác nhận không khớp! Vui lòng kiểm tra lại.");
-        clearPinValue('confirm-pin-inputs');
-        return;
+        clearPinValue('confirm-pin-inputs'); return;
     }
 
     sessionKey = newPin;
     sessionStorage.setItem('vaultSessionKey', newPin);
-    
     saveData(); 
     securityModalEl.hide();
     
-    // Nếu là lần đầu chạy, tự động mở giao diện ứng dụng sau khi lưu thành công
     if (isFirstRun) {
         document.getElementById('btn-close-security').classList.remove('d-none'); 
         loadGenOptions();
@@ -447,21 +396,70 @@ function saveSecurityPin() {
     }
 }
 
-// ================= CÁC CHỨC NĂNG CRUD CÒN LẠI =================
+// ================= XUẤT/NHẬP VĂN BẢN =================
+function exportVaultText() {
+    const rawData = localStorage.getItem(STORAGE_KEY);
+    if (!rawData) return alert("Không có dữ liệu để xuất!");
+    const backupPackage = { timestamp: Date.now(), payload: JSON.parse(rawData) };
+    try {
+        const base64String = btoa(unescape(encodeURIComponent(JSON.stringify(backupPackage))));
+        navigator.clipboard.writeText(base64String).then(() => {
+            alert("Đã sao chép mã sao lưu vào bộ nhớ tạm!\nLưu ý: Mã này chỉ có hiệu lực trong 5 PHÚT.");
+        }).catch(err => {
+            prompt("Trình duyệt chặn copy tự động. Hãy bôi đen và copy đoạn mã dưới đây (Hạn: 5 phút):", base64String);
+        });
+    } catch (e) {
+        alert("Lỗi khi đóng gói dữ liệu!"); console.error(e);
+    }
+}
+
+function showImportModal() {
+    if (importModalEl) {
+        document.getElementById('importTextData').value = ''; 
+        importModalEl.show();
+    }
+}
+
+function processImportText() {
+    const inputBase64 = document.getElementById('importTextData').value.trim();
+    if (!inputBase64) return alert("Vui lòng dán đoạn mã sao lưu vào ô trống!");
+
+    try {
+        const decodedString = decodeURIComponent(escape(atob(inputBase64)));
+        const importedPackage = JSON.parse(decodedString);
+        const currentTime = Date.now();
+        const timeDiff = currentTime - importedPackage.timestamp;
+        const expiryLimit = 5 * 60 * 1000; 
+
+        if (timeDiff > expiryLimit) {
+            const minutesPast = Math.floor(timeDiff / 60000);
+            return alert(`Mã sao lưu đã HẾT HẠN!\nMã này được tạo từ ${minutesPast} phút trước (quá hạn 5 phút). Vui lòng tạo mã mới.`);
+        }
+        if (!importedPackage.payload || importedPackage.payload.hasPin === undefined) throw new Error("Invalid structure.");
+
+        if (confirm("Lưu ý: Nhập mã mới sẽ GHI ĐÈ hoàn toàn dữ liệu đang có trên máy. Bạn chắc chắn chứ?")) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(importedPackage.payload));
+            sessionKey = null;
+            sessionStorage.clear();
+            importModalEl.hide();
+            alert("Khôi phục dữ liệu thành công! Ứng dụng sẽ tự động tải lại.");
+            window.location.reload();
+        }
+    } catch (e) {
+        alert("Mã sao lưu không hợp lệ, bị thiếu chữ hoặc sai định dạng!"); console.error(e);
+    }
+}
+
+// ================= CÁC CHỨC NĂNG CRUD =================
 function showGroupModal(id = null) {
     const title = document.getElementById('groupModalTitle');
     const nameInput = document.getElementById('groupName');
     const idInput = document.getElementById('groupId');
-
     if (id) {
         const group = appData.groups.find(g => g.id === id);
-        title.innerText = "Sửa Nhóm";
-        nameInput.value = group.name;
-        idInput.value = group.id;
+        title.innerText = "Sửa Nhóm"; nameInput.value = group.name; idInput.value = group.id;
     } else {
-        title.innerText = "Thêm Nhóm Mới";
-        nameInput.value = "";
-        idInput.value = "";
+        title.innerText = "Thêm Nhóm Mới"; nameInput.value = ""; idInput.value = "";
     }
     groupModalEl.show();
 }
@@ -469,23 +467,19 @@ function showGroupModal(id = null) {
 function saveGroup() {
     const name = document.getElementById('groupName').value.trim();
     const id = document.getElementById('groupId').value;
-
     if (!name) return alert("Vui lòng nhập tên nhóm!");
-
     if (id) {
         const group = appData.groups.find(g => g.id === id);
         group.name = name;
     } else {
         appData.groups.push({ id: Date.now().toString(), name: name, accounts: [] });
     }
-    saveData();
-    groupModalEl.hide();
+    saveData(); groupModalEl.hide();
 }
 
 function deleteGroup(id) {
     if (confirm("Bạn có chắc muốn xóa nhóm này và TOÀN BỘ tài khoản bên trong?")) {
-        appData.groups = appData.groups.filter(g => g.id !== id);
-        saveData();
+        appData.groups = appData.groups.filter(g => g.id !== id); saveData();
     }
 }
 
@@ -495,19 +489,12 @@ function showAccountModal(groupId, accId = null) {
     const usernameInput = document.getElementById('accUsername');
     const passInput = document.getElementById('accPassword');
     const idInput = document.getElementById('accountId');
-
     if (accId) {
         const group = appData.groups.find(g => g.id === groupId);
         const acc = group.accounts.find(a => a.id === accId);
-        title.innerText = "Sửa Tài Khoản";
-        usernameInput.value = acc.username;
-        passInput.value = acc.password;
-        idInput.value = acc.id;
+        title.innerText = "Sửa Tài Khoản"; usernameInput.value = acc.username; passInput.value = acc.password; idInput.value = acc.id;
     } else {
-        title.innerText = "Thêm Tài Khoản";
-        usernameInput.value = "";
-        passInput.value = "";
-        idInput.value = "";
+        title.innerText = "Thêm Tài Khoản"; usernameInput.value = ""; passInput.value = ""; idInput.value = "";
     }
     accountModalEl.show();
 }
@@ -517,39 +504,28 @@ function saveAccount() {
     const accId = document.getElementById('accountId').value;
     const username = document.getElementById('accUsername').value.trim();
     const password = document.getElementById('accPassword').value.trim();
-
     if (!username || !password) return alert("Vui lòng điền đủ thông tin!");
-
     const group = appData.groups.find(g => g.id === groupId);
-
     if (accId) {
         const acc = group.accounts.find(a => a.id === accId);
-        acc.username = username;
-        acc.password = password;
+        acc.username = username; acc.password = password;
     } else {
         group.accounts.push({ id: Date.now().toString(), username, password });
     }
-    saveData();
-    accountModalEl.hide();
+    saveData(); accountModalEl.hide();
 }
 
 function deleteAccount(groupId, accId) {
     if (confirm("Xóa tài khoản này?")) {
         const group = appData.groups.find(g => g.id === groupId);
-        group.accounts = group.accounts.filter(a => a.id !== accId);
-        saveData();
+        group.accounts = group.accounts.filter(a => a.id !== accId); saveData();
     }
 }
 
 function copyPassword(password) {
     navigator.clipboard.writeText(password).then(() => {
-        const toastEl = document.getElementById('copyToast');
-        const toast = new bootstrap.Toast(toastEl);
-        toast.show();
-    }).catch(err => {
-        console.error('Lỗi khi copy: ', err);
-        alert("Trình duyệt của bạn không hỗ trợ copy tự động!");
-    });
+        const toast = new bootstrap.Toast(document.getElementById('copyToast')); toast.show();
+    }).catch(err => { alert("Trình duyệt của bạn không hỗ trợ copy tự động!"); });
 }
 
 function loadGenOptions() {
@@ -572,44 +548,21 @@ function saveGenOptions() {
 
 function generatePassword() {
     saveGenOptions();
-    const length = appData.genOptions.length;
-    const hasUpper = appData.genOptions.upper;
-    const hasNumber = appData.genOptions.number;
-    const hasSymbol = appData.genOptions.symbol;
-
-    const lowerChars = "abcdefghijklmnopqrstuvwxyz";
-    const upperChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const numberChars = "0123456789";
-    const symbolChars = "!@#$%^&*()_+~|}{[]:;?><,./-=";
-
-    let chars = lowerChars;
-    if (hasUpper) chars += upperChars;
-    if (hasNumber) chars += numberChars;
-    if (hasSymbol) chars += symbolChars;
-
+    const len = appData.genOptions.length, opt = appData.genOptions;
+    const lChars = "abcdefghijklmnopqrstuvwxyz", uChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", nChars = "0123456789", sChars = "!@#$%^&*()_+~|}{[]:;?><,./-=";
+    let chars = lChars;
+    if (opt.upper) chars += uChars; if (opt.number) chars += nChars; if (opt.symbol) chars += sChars;
     let password = "";
-    if (hasUpper) password += upperChars[Math.floor(Math.random() * upperChars.length)];
-    if (hasNumber) password += numberChars[Math.floor(Math.random() * numberChars.length)];
-    if (hasSymbol) password += symbolChars[Math.floor(Math.random() * symbolChars.length)];
-    password += lowerChars[Math.floor(Math.random() * lowerChars.length)];
-
-    while (password.length < length) {
-        password += chars[Math.floor(Math.random() * chars.length)];
-    }
-
-    password = password.split('').sort(() => 0.5 - Math.random()).join('');
-    document.getElementById('accPassword').value = password;
+    if (opt.upper) password += uChars[Math.floor(Math.random() * uChars.length)];
+    if (opt.number) password += nChars[Math.floor(Math.random() * nChars.length)];
+    if (opt.symbol) password += sChars[Math.floor(Math.random() * sChars.length)];
+    password += lChars[Math.floor(Math.random() * lChars.length)];
+    while (password.length < len) password += chars[Math.floor(Math.random() * chars.length)];
+    document.getElementById('accPassword').value = password.split('').sort(() => 0.5 - Math.random()).join('');
 }
 
-function openGroup(id) {
-    currentGroupId = id;
-    renderGroups();
-}
-
-function closeGroup() {
-    currentGroupId = null;
-    renderGroups();
-}
+function openGroup(id) { currentGroupId = id; renderGroups(); }
+function closeGroup() { currentGroupId = null; renderGroups(); }
 
 function renderGroups() {
     const listEl = document.getElementById('group-list');
@@ -618,35 +571,21 @@ function renderGroups() {
     if (currentGroupId) {
         const group = appData.groups.find(g => g.id === currentGroupId);
         if (!group) { currentGroupId = null; renderGroups(); return; }
-
         listEl.className = '';
-
         let html = `
             <div class="d-flex align-items-center justify-content-between mb-4 bg-white p-3 rounded-4 shadow-sm border">
-                <button class="btn btn-light shadow-sm" onclick="closeGroup()">
-                    <i class="fa-solid fa-chevron-left"></i>
-                </button>
+                <button class="btn btn-light shadow-sm" onclick="closeGroup()"><i class="fa-solid fa-chevron-left"></i></button>
                 <h4 class="mb-0 fw-bold text-primary text-truncate">${group.name}</h4>
-                <button class="btn btn-success shadow-sm" onclick="showAccountModal('${group.id}')">
-                    <i class="fa-solid fa-plus"></i> <span class="d-none d-md-inline">Thêm TK</span>
-                </button>
-            </div>
-        `;
-
+                <button class="btn btn-success shadow-sm" onclick="showAccountModal('${group.id}')"><i class="fa-solid fa-plus"></i> <span class="d-none d-md-inline">Thêm TK</span></button>
+            </div>`;
         if (group.accounts.length === 0) {
-            html += `
-                <div class="text-center text-muted py-5 bg-white rounded-4 shadow-sm border">
-                    <i class="fa-solid fa-ghost fs-1 mb-3 text-secondary opacity-50"></i>
-                    <h5>Nhóm này chưa có tài khoản</h5>
-                </div>`;
+            html += `<div class="text-center text-muted py-5 bg-white rounded-4 shadow-sm border"><i class="fa-solid fa-ghost fs-1 mb-3 text-secondary opacity-50"></i><h5>Nhóm này chưa có tài khoản</h5></div>`;
         } else {
             html += `<div class="d-flex flex-column gap-3">`;
             group.accounts.forEach(acc => {
                 html += `
                     <div class="account-item d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 shadow-sm border-0">
-                        <div style="flex: 1;">
-                            <strong class="d-block fs-5 text-dark mb-1"><i class="fa-solid fa-user-circle me-2 text-primary"></i>${acc.username}</strong>
-                        </div>
+                        <div style="flex: 1;"><strong class="d-block fs-5 text-dark mb-1"><i class="fa-solid fa-user-circle me-2 text-primary"></i>${acc.username}</strong></div>
                         <div class="password-display flex-grow-1" id="pass-${acc.id}">********</div>
                         <div class="action-btns d-flex justify-content-end">
                             <button class="btn btn-light border shadow-sm" onclick="copyPassword('${acc.password}')" title="Sao chép"><i class="fa-regular fa-copy text-success"></i></button>
@@ -659,24 +598,18 @@ function renderGroups() {
             html += `</div>`;
         }
         listEl.innerHTML = html;
-
     } else {
         if (appData.groups.length === 0) {
             listEl.className = '';
             listEl.innerHTML = `
                 <div class="text-center text-muted py-5 bg-white rounded-4 shadow-sm border">
                     <i class="fa-solid fa-folder-open fs-1 mb-3 text-secondary opacity-50"></i>
-                    <h5>Kho lưu trữ trống</h5>
-                    <p>Hãy bấm nút bên dưới để bắt đầu nhé!</p>
-                    <button class="btn btn-primary mt-2 shadow-sm" onclick="showGroupModal()">
-                        <i class="fa-solid fa-plus me-1"></i> Thêm Nhóm Đầu Tiên
-                    </button>
+                    <h5>Kho lưu trữ trống</h5><p>Hãy bấm nút bên dưới để bắt đầu nhé!</p>
+                    <button class="btn btn-primary mt-2 shadow-sm" onclick="showGroupModal()"><i class="fa-solid fa-plus me-1"></i> Thêm Nhóm Đầu Tiên</button>
                 </div>`;
             return;
         }
-
         listEl.className = 'row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4';
-
         appData.groups.forEach(group => {
             const groupHtml = `
                 <div class="col">
@@ -697,102 +630,23 @@ function renderGroups() {
                             <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill shadow-sm">${group.accounts.length} tài khoản</span>
                         </div>
                     </div>
-                </div>
-            `;
+                </div>`;
             listEl.insertAdjacentHTML('beforeend', groupHtml);
         });
-
         const addGroupHtml = `
             <div class="col">
                 <div class="card h-100 folder-card folder-card-add" onclick="showGroupModal()">
                     <div class="card-body d-flex flex-column align-items-center justify-content-center text-center p-3">
-                        <i class="fa-solid fa-plus mb-2" style="font-size: 2rem;"></i>
-                        <h5 class="fw-bold mb-0 fs-5">Thêm Nhóm</h5>
+                        <i class="fa-solid fa-plus mb-2" style="font-size: 2rem;"></i><h5 class="fw-bold mb-0 fs-5">Thêm Nhóm</h5>
                     </div>
                 </div>
-            </div>
-        `;
+            </div>`;
         listEl.insertAdjacentHTML('beforeend', addGroupHtml);
     }
 }
 
 function togglePass(id, password) {
     const el = document.getElementById(`pass-${id}`);
-    if (el.innerText === '********') {
-        el.innerText = password;
-        el.style.letterSpacing = "1px";
-    } else {
-        el.innerText = '********';
-        el.style.letterSpacing = "3px";
-    }
-}
-
-// ================= CHỨC NĂNG XUẤT/NHẬP FILE =================
-
-/**
- * Hàm Xuất dữ liệu: Tải xuống file chứa toàn bộ payload đã mã hóa
- */
-function exportVault() {
-    // Lấy dữ liệu thô đang nằm trong localStorage (đã được mã hóa AES)
-    const rawData = localStorage.getItem(STORAGE_KEY);
-    
-    if (!rawData) {
-        alert("Không có dữ liệu để xuất!");
-        return;
-    }
-
-    // Tạo một đối tượng Blob chứa nội dung JSON
-    const blob = new Blob([rawData], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    
-    // Tạo link ẩn để tải file
-    const a = document.createElement("a");
-    const date = new Date().toISOString().slice(0, 10); // Lấy ngày yyyy-mm-dd
-    a.href = url;
-    a.download = `Vault_Backup_${date}.json`;
-    document.body.appendChild(a);
-    a.click();
-    
-    // Dọn dẹp
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-
-/**
- * Hàm Nhập dữ liệu: Đọc file người dùng tải lên và ghi đè vào localStorage
- */
-function importVault(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const content = e.target.result;
-            
-            // Kiểm tra sơ bộ xem file có đúng cấu trúc JSON của App không
-            const testParse = JSON.parse(content);
-            if (!testParse.payload || testParse.hasPin === undefined) {
-                throw new Error("File không đúng định dạng VaultApp!");
-            }
-
-            if (confirm("Lưu ý: Nhập file mới sẽ GHI ĐÈ hoàn toàn dữ liệu hiện tại. Bạn có chắc chắn không?")) {
-                // Ghi đè vào localStorage
-                localStorage.setItem(STORAGE_KEY, content);
-                
-                // Reset lại toàn bộ trạng thái App để yêu cầu đăng nhập bằng mã PIN của FILE MỚI
-                sessionKey = null;
-                sessionStorage.clear();
-                
-                alert("Nhập dữ liệu thành công! Ứng dụng sẽ khởi động lại.");
-                window.location.reload(); // Tải lại trang để áp dụng mã PIN mới từ file
-            }
-        } catch (err) {
-            alert("Lỗi: File không hợp lệ hoặc bị hỏng! " + err.message);
-        }
-    };
-    reader.readAsText(file);
-    
-    // Reset input file để có thể nhập lại cùng 1 file nếu muốn
-    event.target.value = '';
+    if (el.innerText === '********') { el.innerText = password; el.style.letterSpacing = "1px"; } 
+    else { el.innerText = '********'; el.style.letterSpacing = "3px"; }
 }
