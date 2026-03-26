@@ -726,3 +726,73 @@ function togglePass(id, password) {
         el.style.letterSpacing = "3px";
     }
 }
+
+// ================= CHỨC NĂNG XUẤT/NHẬP FILE =================
+
+/**
+ * Hàm Xuất dữ liệu: Tải xuống file chứa toàn bộ payload đã mã hóa
+ */
+function exportVault() {
+    // Lấy dữ liệu thô đang nằm trong localStorage (đã được mã hóa AES)
+    const rawData = localStorage.getItem(STORAGE_KEY);
+    
+    if (!rawData) {
+        alert("Không có dữ liệu để xuất!");
+        return;
+    }
+
+    // Tạo một đối tượng Blob chứa nội dung JSON
+    const blob = new Blob([rawData], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    
+    // Tạo link ẩn để tải file
+    const a = document.createElement("a");
+    const date = new Date().toISOString().slice(0, 10); // Lấy ngày yyyy-mm-dd
+    a.href = url;
+    a.download = `Vault_Backup_${date}.json`;
+    document.body.appendChild(a);
+    a.click();
+    
+    // Dọn dẹp
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+/**
+ * Hàm Nhập dữ liệu: Đọc file người dùng tải lên và ghi đè vào localStorage
+ */
+function importVault(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const content = e.target.result;
+            
+            // Kiểm tra sơ bộ xem file có đúng cấu trúc JSON của App không
+            const testParse = JSON.parse(content);
+            if (!testParse.payload || testParse.hasPin === undefined) {
+                throw new Error("File không đúng định dạng VaultApp!");
+            }
+
+            if (confirm("Lưu ý: Nhập file mới sẽ GHI ĐÈ hoàn toàn dữ liệu hiện tại. Bạn có chắc chắn không?")) {
+                // Ghi đè vào localStorage
+                localStorage.setItem(STORAGE_KEY, content);
+                
+                // Reset lại toàn bộ trạng thái App để yêu cầu đăng nhập bằng mã PIN của FILE MỚI
+                sessionKey = null;
+                sessionStorage.clear();
+                
+                alert("Nhập dữ liệu thành công! Ứng dụng sẽ khởi động lại.");
+                window.location.reload(); // Tải lại trang để áp dụng mã PIN mới từ file
+            }
+        } catch (err) {
+            alert("Lỗi: File không hợp lệ hoặc bị hỏng! " + err.message);
+        }
+    };
+    reader.readAsText(file);
+    
+    // Reset input file để có thể nhập lại cùng 1 file nếu muốn
+    event.target.value = '';
+}
