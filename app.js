@@ -10,11 +10,9 @@ let appData = {
     genOptions: { length: 12, upper: true, number: true, symbol: true }
 };
 
-// Lấy toàn bộ cấu hình từ 1 Key duy nhất
 let vaultConfig = JSON.parse(localStorage.getItem(STORAGE_KEY)) || null;
 let sessionKey = sessionStorage.getItem('vaultSessionKey') || null;
 
-// Lấy trạng thái khóa trực tiếp từ vaultConfig (nếu có), nếu không thì mặc định là 0
 let lockoutStatus = (vaultConfig && vaultConfig.lockout) ? vaultConfig.lockout : { attempts: 0, lockUntil: 0 };
 let lockoutInterval = null;
 
@@ -24,7 +22,12 @@ let currentGroupId = null;
 document.addEventListener('DOMContentLoaded', () => {
     groupModalEl = new bootstrap.Modal(document.getElementById('groupModal'));
     accountModalEl = new bootstrap.Modal(document.getElementById('accountModal'));
-    securityModalEl = new bootstrap.Modal(document.getElementById('securityModal'));
+    
+    // Cài đặt Modal Bảo mật KHÔNG THỂ thoát nếu click ra ngoài hoặc bấm Esc
+    securityModalEl = new bootstrap.Modal(document.getElementById('securityModal'), {
+        backdrop: 'static',
+        keyboard: false
+    });
     
     // Tự động tạo giao diện Cảnh báo khóa
     const unlockContainer = document.getElementById('unlock-pin-container');
@@ -104,7 +107,7 @@ function hideModalError() {
     if (errEl) errEl.classList.add('d-none');
 }
 
-// ================= LOGIC KHÓA TẠM THỜI (GỘP CHUNG VÀO CONFIG) =================
+// ================= LOGIC KHÓA TẠM THỜI =================
 function handleFailedAttempt() {
     lockoutStatus.attempts++;
     let waitTime = 0; 
@@ -118,7 +121,6 @@ function handleFailedAttempt() {
         lockoutStatus.lockUntil = Date.now() + (waitTime * 1000);
     }
     
-    // Ghi đè trực tiếp trạng thái khóa vào vaultConfig đang lưu trên LocalStorage
     if (vaultConfig) {
         vaultConfig.lockout = lockoutStatus;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(vaultConfig));
@@ -180,7 +182,7 @@ function saveData() {
 
     const configToSave = {
         hasPin: !!sessionKey,
-        lockout: lockoutStatus, // Lưu kèm trạng thái khóa chung với payload
+        lockout: lockoutStatus, 
         payload: payloadToSave
     };
 
@@ -231,7 +233,7 @@ function toggleLockButton() {
     if (btnLock) {
         if (vaultConfig && vaultConfig.hasPin && sessionKey) {
             btnLock.classList.remove('d-none');
-            btnLock.classList.add('d-flex'); // Hỗ trợ UI nút nổi
+            btnLock.classList.add('d-flex'); 
         } else {
             btnLock.classList.add('d-none');
             btnLock.classList.remove('d-flex');
@@ -239,14 +241,14 @@ function toggleLockButton() {
     }
 }
 
-// ================= KIỂM TRA BẢO MẬT & MÀN HÌNH KHÓA =================
+// ================= KIỂM TRA BẢO MẬT =================
 function initSecurityCheck() {
     checkLockoutTimer(); 
 
-    if (!vaultConfig) {
-        document.getElementById('first-run-note').classList.remove('d-none');
-        securityModalEl.show();
-    } else if (vaultConfig.hasPin) {
+    if (!vaultConfig || !vaultConfig.hasPin) {
+        // Nếu khởi chạy lần đầu: Bắt buộc gọi Modal tạo PIN
+        showSecurityModal();
+    } else {
         if (sessionKey && decryptData(sessionKey)) {
             toggleLockButton();
             loadGenOptions();
@@ -257,10 +259,6 @@ function initSecurityCheck() {
                 document.querySelector('#unlock-pin-container .pin-box').focus();
             }
         }
-    } else {
-        appData = vaultConfig.payload;
-        loadGenOptions();
-        renderGroups();
     }
 }
 
@@ -271,27 +269,24 @@ function verifyPin() {
     if (pin.length !== 6) return;
 
     if (decryptData(pin)) {
-        // ĐÚNG PIN
         document.getElementById('lock-screen').classList.add('d-none');
         sessionKey = pin;
         sessionStorage.setItem('vaultSessionKey', pin);
         clearPinValue('unlock-pin-container');
         hideUnlockError();
         
-        // Reset trạng thái khóa về 0 khi nhập đúng
         lockoutStatus = { attempts: 0, lockUntil: 0 };
 
         toggleLockButton();
         loadGenOptions();
-        saveData(); // Bắt buộc gọi saveData để nó ghi đè trạng thái khóa đã reset vào LocalStorage
+        saveData(); 
     } else {
-        // SAI PIN
         clearPinValue('unlock-pin-container');
         handleFailedAttempt();
     }
 }
 
-// ================= QUẢN LÝ MÃ PIN (OTP STYLE LOGIC) =================
+// ================= QUẢN LÝ MÃ PIN =================
 function getPinValue(containerId) {
     const container = document.getElementById(containerId);
     if(!container) return "";
@@ -368,15 +363,11 @@ function setupPinInputs(containerId, onComplete) {
     });
 }
 
-// ================= LOGIC ĐỔI MÀU & HIỂN THỊ TRONG MODAL =================
 function resetOldPinValidation() {
     const inputs = document.querySelectorAll('#old-pin-inputs .pin-box');
     inputs.forEach(inp => {
         inp.classList.remove('border-success', 'border-danger', 'text-success', 'text-danger');
     });
-    if (vaultConfig && vaultConfig.hasPin) {
-        document.getElementById('btn-skip-pin').classList.add('d-none');
-    }
 }
 
 function handleOldPinCheck(val) {
@@ -386,14 +377,12 @@ function handleOldPinCheck(val) {
             inp.classList.remove('border-danger', 'text-danger');
             inp.classList.add('border-success', 'text-success');
         });
-        document.getElementById('btn-skip-pin').classList.remove('d-none');
         document.querySelector('#new-pin-inputs .pin-box').focus();
     } else {
         inputs.forEach(inp => {
             inp.classList.remove('border-success', 'text-success');
             inp.classList.add('border-danger', 'text-danger');
         });
-        document.getElementById('btn-skip-pin').classList.add('d-none');
     }
 }
 
@@ -404,22 +393,17 @@ function showSecurityModal() {
     resetOldPinValidation();
     hideModalError();
     
-    if (vaultConfig && vaultConfig.hasPin) {
-        document.getElementById('old-pin-container').classList.remove('d-none');
-        document.getElementById('btn-skip-pin').innerText = "Gỡ bỏ mã PIN";
-        document.getElementById('btn-skip-pin').classList.add('d-none');
-        document.getElementById('first-run-note').classList.add('d-none');
-    } else {
+    // Kiểm tra có phải lần đầu không
+    const isFirstRun = (!vaultConfig || !vaultConfig.hasPin);
+
+    if (isFirstRun) {
         document.getElementById('old-pin-container').classList.add('d-none');
-        document.getElementById('btn-skip-pin').innerText = "Bỏ qua";
-        document.getElementById('btn-skip-pin').classList.remove('d-none');
-        
-        if(!vaultConfig) {
-            document.getElementById('first-run-note').classList.remove('d-none');
-        } else {
-            document.getElementById('first-run-note').classList.add('d-none');
-        }
+        document.getElementById('btn-close-security').classList.add('d-none'); // Khóa nút X
+    } else {
+        document.getElementById('old-pin-container').classList.remove('d-none');
+        document.getElementById('btn-close-security').classList.remove('d-none'); // Mở nút X
     }
+    
     securityModalEl.show();
 }
 
@@ -427,8 +411,10 @@ function saveSecurityPin() {
     const oldPin = getPinValue('old-pin-inputs');
     const newPin = getPinValue('new-pin-inputs');
     const confirmPin = getPinValue('confirm-pin-inputs');
+    const isFirstRun = (!vaultConfig || !vaultConfig.hasPin);
 
-    if (vaultConfig && vaultConfig.hasPin && oldPin !== sessionKey) {
+    // Nếu không phải lần đầu, bắt buộc kiểm tra mã PIN cũ
+    if (!isFirstRun && oldPin !== sessionKey) {
         showModalError("Mã PIN hiện tại không chính xác!");
         clearPinValue('old-pin-inputs');
         return;
@@ -452,30 +438,16 @@ function saveSecurityPin() {
     
     saveData(); 
     securityModalEl.hide();
-}
-
-function skipPin() {
-    if (vaultConfig && vaultConfig.hasPin) {
-        const oldPin = getPinValue('old-pin-inputs');
-        if (oldPin !== sessionKey) {
-            showModalError("Vui lòng nhập đúng Mã PIN hiện tại vào ô trống để xác nhận gỡ bỏ!");
-            clearPinValue('old-pin-inputs');
-            return;
-        }
-
-        if (confirm("CẢNH BÁO: Gỡ bỏ mã PIN đồng nghĩa với việc DỮ LIỆU CỦA BẠN SẼ KHÔNG CÒN ĐƯỢC MÃ HÓA. Bạn có chắc chắn?")) {
-            sessionKey = null;
-            sessionStorage.removeItem('vaultSessionKey');
-            saveData(); 
-            securityModalEl.hide();
-        }
-    } else {
-        saveData(); 
-        securityModalEl.hide();
+    
+    // Nếu là lần đầu chạy, tự động mở giao diện ứng dụng sau khi lưu thành công
+    if (isFirstRun) {
+        document.getElementById('btn-close-security').classList.remove('d-none'); 
+        loadGenOptions();
+        renderGroups();
     }
 }
 
-// ================= CÁC CHỨC NĂNG CRUD CÒN LẠI (Sửa, Xóa, Copy...) GIỮ NGUYÊN =================
+// ================= CÁC CHỨC NĂNG CRUD CÒN LẠI =================
 function showGroupModal(id = null) {
     const title = document.getElementById('groupModalTitle');
     const nameInput = document.getElementById('groupName');
@@ -715,7 +687,7 @@ function renderGroups() {
                                     <i class="fa-solid fa-ellipsis-vertical text-secondary fs-5"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
-                                    <li><a class="dropdown-item text-primary py-2" href="#" onclick="event.preventDefault(); showGroupModal('${group.id}')"><i class="fa-solid fa-pen me-2"></i>Sửa nhóm</a></li>
+                                    <li><a class="dropdown-item text-primary py-2" href="#" onclick="event.preventDefault(); showGroupModal('${group.id}')"><i class="fa-solid fa-pen me-2"></i>Sửa tên nhóm</a></li>
                                     <li><a class="dropdown-item text-danger py-2" href="#" onclick="event.preventDefault(); deleteGroup('${group.id}')"><i class="fa-solid fa-trash me-2"></i>Xóa nhóm</a></li>
                                 </ul>
                             </div>
