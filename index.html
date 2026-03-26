@@ -77,28 +77,20 @@
             <div class="modal-content border-0">
                 <div class="modal-header">
                     <h5 class="modal-title fw-bold">Cài đặt mã bảo mật (PIN)</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" id="btn-close-security" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4 text-center">
-                    <p class="text-muted small mb-3">Mã PIN gồm <b>đúng 6 chữ số</b> dùng để <strong
-                            class="text-danger">mã hóa toàn bộ</strong> dữ liệu của bạn.</p>
-
+                    <p class="text-muted small mb-3">Mã PIN gồm <b>đúng 6 chữ số</b> dùng để <strong class="text-danger">mã hóa toàn bộ</strong> dữ liệu của bạn.</p>
+                    
                     <div class="mb-3 d-none" id="old-pin-container">
-                        <label class="form-label fw-bold text-warning mb-2">Mã PIN hiện tại <span
-                                class="text-danger">*</span></label>
+                        <label class="form-label fw-bold text-warning mb-2">Mã PIN hiện tại <span class="text-danger">*</span></label>
                         <div class="d-flex gap-2 justify-content-center" id="old-pin-inputs">
-                            <input type="password" class="form-control pin-box bg-light" maxlength="1"
-                                inputmode="numeric">
-                            <input type="password" class="form-control pin-box bg-light" maxlength="1"
-                                inputmode="numeric">
-                            <input type="password" class="form-control pin-box bg-light" maxlength="1"
-                                inputmode="numeric">
-                            <input type="password" class="form-control pin-box bg-light" maxlength="1"
-                                inputmode="numeric">
-                            <input type="password" class="form-control pin-box bg-light" maxlength="1"
-                                inputmode="numeric">
-                            <input type="password" class="form-control pin-box bg-light" maxlength="1"
-                                inputmode="numeric">
+                            <input type="password" class="form-control pin-box bg-light" maxlength="1" inputmode="numeric">
+                            <input type="password" class="form-control pin-box bg-light" maxlength="1" inputmode="numeric">
+                            <input type="password" class="form-control pin-box bg-light" maxlength="1" inputmode="numeric">
+                            <input type="password" class="form-control pin-box bg-light" maxlength="1" inputmode="numeric">
+                            <input type="password" class="form-control pin-box bg-light" maxlength="1" inputmode="numeric">
+                            <input type="password" class="form-control pin-box bg-light" maxlength="1" inputmode="numeric">
                         </div>
                     </div>
 
@@ -115,8 +107,7 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold text-success mb-2">Nhập lại mã PIN mới <span
-                                class="text-danger">*</span></label>
+                        <label class="form-label fw-bold text-success mb-2">Nhập lại mã PIN mới <span class="text-danger">*</span></label>
                         <div class="d-flex gap-2 justify-content-center" id="confirm-pin-inputs">
                             <input type="password" class="form-control pin-box" maxlength="1" inputmode="numeric">
                             <input type="password" class="form-control pin-box" maxlength="1" inputmode="numeric">
@@ -126,15 +117,9 @@
                             <input type="password" class="form-control pin-box" maxlength="1" inputmode="numeric">
                         </div>
                     </div>
-
-                    <div id="first-run-note" class="alert alert-info py-2 small d-none mb-0 mt-2">
-                        Bạn có thể bấm "Bỏ qua" nếu không muốn đặt mã bảo mật lúc này.
-                    </div>
                 </div>
-                <div class="modal-footer border-0 bg-light rounded-bottom-4">
-                    <button type="button" class="btn btn-link text-muted me-auto" id="btn-skip-pin" onclick="skipPin()"
-                        style="text-decoration: none;">Bỏ qua</button>
-                    <button type="button" class="btn btn-primary px-4" onclick="saveSecurityPin()">Lưu mã PIN</button>
+                <div class="modal-footer border-0 bg-light rounded-bottom-4 d-flex justify-content-center">
+                    <button type="button" class="btn btn-primary px-5 fw-bold" onclick="saveSecurityPin()">Lưu mã PIN</button>
                 </div>
             </div>
         </div>
